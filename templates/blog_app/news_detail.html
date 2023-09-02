@@ -1,0 +1,146 @@
+{% extends "components/base.html" %}
+{% load static %}
+{% block main %}
+
+<article
+  class="rounded-lg border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-lg sm:p-6"
+>
+  <span class="inline-block rounded bg-blue-600 p-2 text-white">
+ <img src="{% static new.image.url %} ">
+  </span>
+
+  <a href="#">
+    <h3 class="mt-0.5 text-lg font-medium text-gray-900">
+      {{ new.title }}
+    </h3>
+  </a>
+
+  <p class="mt-2 line-clamp-3 text-sm/relaxed text-gray-500">
+  {{ new.description }}
+  </p>
+
+    {% if user.is_authenticated %}
+        <div class="d-flex gap-2 justify-content-center py-1">
+            <div class="input-group">
+            <button class="btn border border-dark border-1 d-inline-flex align-items-center" type="button">
+                {% if rating.rating == 0 %}
+                    <p class="text-dark">
+                    0 ({{ count_r }} оценки)
+                    </p>
+                {% elif rating.rating > 0 %}
+                    <p class="text-success">
+                    {{ rating.rating }} ({{ rating.count_r }} оценки)
+                    </p>
+                {% else %}
+                    <p class="text-danger">
+                    {{ rating.rating }} ({{ rating.count_r }} оценки)
+                    </p>
+                {% endif %}
+            </button>
+            <a href="{% url "rating_change" new.id 1 %}" class="btn btn-outline-success d-inline-flex align-items-center m-1 p-1">
+                <i class="fa-solid fa-thumbs-up"></i>
+            </a>
+            <a href="{% url "rating_change" new.id -1 %}" class="btn btn-outline-danger d-inline-flex align-items-center m-1 p-1">
+                <i class="fa-solid fa-thumbs-down"></i>
+            </a>
+            </div>
+        </div>
+    {% endif %}
+</article>
+
+    <div class="container px-4 py-5 bg-light card" id="hanging-icons">
+    <h2 class="pb-2 border-bottom">Комментарии:</h2>
+{% if user.is_authenticated %}
+    <form action="{% url "news_comments_create" new.id %}" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <h1 class="h3 mb-3 fw-normal text-center">Ваш комментарий:</h1>
+        <!--
+  Heads up! 👋
+
+  Plugins:
+    - @tailwindcss/forms
+-->
+
+<label
+  for="UserEmail"
+  class="relative block overflow-hidden rounded-md border border-gray-200 px-3 pt-3 shadow-sm focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600"
+>
+  <input
+          name="text"
+    type="text"
+    id="UserEmail"
+    placeholder="Я считаю..."
+    class="peer h-8 w-full border-none bg-transparent p-0 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-0 sm:text-sm"
+  />
+
+
+</label>
+
+
+{#        <div class="input-group">#}
+{#            <input name="text" type="text" class="form-control" id="floatingInput" placeholder="я думаю..." minlength="5" maxlength="200" required>#}
+            <button class="inline-block rounded border border-indigo-600 px-12 py-3 text-sm font-medium text-indigo-600 hover:bg-indigo-600 hover:text-white focus:outline-none focus:ring active:bg-indigo-500" type="submit">Создать</button>
+{#        </div>#}
+    </form>
+{% endif %}
+    <hr/>
+
+    <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
+        {% for comment in current_page %}
+        <div class="col d-flex align-items-start">
+            <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+                <svg class="bi" width="1em" height="1em"><use xlink:href="#toggles2"></use></svg>
+            </div>
+            <div>
+                <h3 class="fs-2 text-body-emphasis">{{ comment.author.username }}</h3>
+                <p>{{ comment.text }}</p>
+                <hr class="m-0 p-1"/>
+                <p class="text-secondary small">{{ comment.date_time }}</p>
+                <a href="#" class="group relative inline-block text-sm font-medium text-red-600 focus:outline-none focus:ring active:text-red-500">
+                    Пожаловаться!
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col d-flex align-items-start">
+            <div>
+                <h3 class="fs-2 text-body-emphasis">Комментариев нет!</h3>
+                <p>Вы можете быть первыми!</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% include "components/paginator.html" %}
+</div>
+
+{% endblock main %}
+
+<!-- Base -->
+
+<a
+  class="group relative inline-block text-sm font-medium text-white focus:outline-none focus:ring"
+  href="/download"
+>
+  <span
+    class="absolute inset-0 border border-red-600 group-active:border-red-500"
+  ></span>
+  <span
+    class="block border border-red-600 bg-red-600 px-12 py-3 transition-transform active:border-red-500 active:bg-red-500 group-hover:-translate-x-1 group-hover:-translate-y-1"
+  >
+    Download
+  </span>
+</a>
+
+<!-- Border -->
+
+<a
+  class="group relative inline-block text-sm font-medium text-red-600 focus:outline-none focus:ring active:text-red-500"
+  href="/download"
+>
+  <span class="absolute inset-0 border border-current"></span>
+  <span
+    class="block border border-current bg-white px-12 py-3 transition-transform group-hover:-translate-x-1 group-hover:-translate-y-1"
+  >
+    Download
+  </span>
+</a>
