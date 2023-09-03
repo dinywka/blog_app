@@ -2,6 +2,19 @@
 {% load static %}
 {% block main %}
 
+<div class="container mt-5">
+    <form class="search-form p-3 m-2 rounded bg-light shadow" action="{% url "post_search" %}" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="input-group">
+            <input class="form-control form-control-lg p-2 m-1 rounded" type="text" name="search" placeholder="{{ search }}" value="{{ search }}" />
+            <div class="input-group-append">
+                <button class="btn btn-success" type="submit"><i class="fa fa-search"></i> Искать</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"> <!-- grid styles added here -->
 {% for post in posts %}
   <article class="flex bg-white transition hover:shadow-xl">

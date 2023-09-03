@@ -6,43 +6,58 @@
   class="rounded-lg border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-lg sm:p-6"
 >
   <span class="inline-block rounded bg-blue-600 p-2 text-white">
- <img src="{% static new.image.url %} ">
+      {% if post.image %}
+ <img src="{% static post.image.url %} " alt=""/>
+      {% endif %}
   </span>
 
   <a href="#">
     <h3 class="mt-0.5 text-lg font-medium text-gray-900">
-      {{ new.title }}
+      {{ post.title }}
     </h3>
   </a>
 
   <p class="mt-2 line-clamp-3 text-sm/relaxed text-gray-500">
-  {{ new.description }}
+  {{ post.description }}
   </p>
 
     {% if user.is_authenticated %}
         <div class="d-flex gap-2 justify-content-center py-1">
             <div class="input-group">
             <button class="btn border border-dark border-1 d-inline-flex align-items-center" type="button">
-                {% if rating.rating == 0 %}
+                {% if ratings.total == 0 %}
                     <p class="text-dark">
-                    0 ({{ count_r }} оценки)
+                    0 ({{ ratings.total }} оценки)
                     </p>
-                {% elif rating.rating > 0 %}
+                {% elif ratings.total > 0 %}
                     <p class="text-success">
-                    {{ rating.rating }} ({{ rating.count_r }} оценки)
+                    {{ ratings.total }} ({{ rating.total }} оценки)
                     </p>
                 {% else %}
                     <p class="text-danger">
-                    {{ rating.rating }} ({{ rating.count_r }} оценки)
+                    {{ ratings.total }} ({{ rating.total }} оценки)
                     </p>
                 {% endif %}
             </button>
-            <a href="{% url "rating_change" new.id 1 %}" class="btn btn-outline-success d-inline-flex align-items-center m-1 p-1">
-                <i class="fa-solid fa-thumbs-up"></i>
-            </a>
-            <a href="{% url "rating_change" new.id -1 %}" class="btn btn-outline-danger d-inline-flex align-items-center m-1 p-1">
-                <i class="fa-solid fa-thumbs-down"></i>
-            </a>
+                {% if user.is_authenticated %}
+                <a href="{% url "post_rating" post.id 'лайк' %}"
+                    {% if my_rule == 1 %}
+                       class="btn btn-success d-inline-flex align-items-center m-1 p-1">
+                    {% else %}
+                       class="btn btn-outline-success d-inline-flex align-items-center m-1 p-1">
+                    {% endif %}
+                    <i class="fa-solid fa-thumbs-up">{{ ratings.like }}</i>
+                </a>
+
+                <a href="{% url "post_rating" post.id 'дизлайк' %}"
+                    {% if my_rule == -1 %}
+                        class="btn btn-danger d-inline-flex align-items-center m-1 p-1">
+                    {% else %}
+                        class="btn btn-outline-danger d-inline-flex align-items-center m-1 p-1">
+                    {% endif %}
+                    <i class="fa-solid fa-thumbs-down">{{ ratings.dislike }}</i>
+                </a>
+            {% endif %}
             </div>
         </div>
     {% endif %}
@@ -51,7 +66,7 @@
     <div class="container px-4 py-5 bg-light card" id="hanging-icons">
     <h2 class="pb-2 border-bottom">Комментарии:</h2>
 {% if user.is_authenticated %}
-    <form action="{% url "news_comments_create" new.id %}" method="POST" enctype="multipart/form-data">
+    <form action="{% url "post_comment_create" post.id %}" method="POST" enctype="multipart/form-data">
         {% csrf_token %}
         <h1 class="h3 mb-3 fw-normal text-center">Ваш комментарий:</h1>
         <!--
@@ -86,7 +101,7 @@
     <hr/>
 
     <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
-        {% for comment in current_page %}
+        {% for comment in comments %}
         <div class="col d-flex align-items-start">
             <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
                 <svg class="bi" width="1em" height="1em"><use xlink:href="#toggles2"></use></svg>

@@ -1,14 +1,23 @@
-from django.shortcuts import render
-
-from django.contrib.auth.hashers import make_password
-from django.contrib.auth.models import User
-from django.http import HttpRequest, HttpResponse, JsonResponse, HttpResponseRedirect
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout
-from django.urls import reverse
+import datetime
 import random
 import re
+
+from django.conf import settings
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth.models import User
+from django.core.mail import send_mail
+from django.core.paginator import Paginator
+from django.http import HttpRequest, HttpResponse
+from django.shortcuts import render, redirect
+from django.urls import reverse
 from blog_app import models
+from django.core.cache import caches, CacheHandler
+
+RamCache = caches["default"]
+DatabaseCache = caches["extra"]
+
 
 
 # Create your views here.
@@ -75,18 +84,31 @@ def post_list(request: HttpRequest) -> HttpResponse:
     posts = models.Post.objects.all()
 
     return render(request, "blog_app/list.html", {"posts": posts})
-#
-#
-# def post_detail(request: HttpRequest, pk: str) -> HttpResponse:
-#     """_view"""
-#     return redirect(reverse("login"))
-#
-#
-# # def create_view(request: HttpRequest, pk: str) -> HttpResponse:
-# #     """_view"""
-# #     return redirect(reverse("login"))
-#
-#
+
+
+def post_detail(request: HttpRequest, pk: str) -> HttpResponse:
+    """_view"""
+    post = RamCache.get(f"post_detail_{pk}")
+    if post is None:
+        post = models.Post.objects.get(id=pk)  # тяжёлое обращение к базе данных -- 100x - 1000x
+        RamCache.set(f"post_detail_{pk}", post, timeout=30)
+
+    # Если мы поставили лайк - то закрашиваем кнопку
+    # post + user
+
+    comments = models.PostComments.objects.filter(post=post)
+    ratings = models.PostRatings.objects.filter(post=post)
+    ratings = {
+        "like": ratings.filter(status=True).count(),
+        "dislike": ratings.filter(status=False).count(),
+        "total": ratings.filter(status=True).count() - ratings.filter(status=False).count(),
+    }
+
+    return render(request, "blog_app/post_detail.html",
+                  context={"post": post, "comments": comments, "ratings": ratings, "is_detail_view": True})
+
+
+
 def post_create(request):
     """Создание нового мема."""
 
@@ -127,57 +149,84 @@ def post_create(request):
 #         raise ValueError("Invalid method")
 #
 #
-# def tags(request):
-#     memes = [
-#         {
-#             "id": x,
-#             "title": f"Наименование {x}",
-#             "description": {"data1": {"price": random.randint(1, 1000000) + random.random()}}
-#
-#         }
-#         for x in range(1, 20 + 1)
-#     ]
-#     return render(request, "blog_app/tags.html", {"memes": memes})
-#
-#
-#
-# def news_comments_create(request, pk):
-#     """Создание комментария."""
-#
-#     if request.method != "POST":
-#         raise Exception("Invalid method")
-#
-#     news = models.News.objects.get(id=int(pk))
-#     user = request.user
-#     text = request.POST.get("text", "")
-#     models.NewsComments.objects.create(news=news, author=user, text=text)
-#
-#     return redirect(reverse('news_detail', args=(pk,)))
-#
-#
-# def rating_change(request, pk, status):
-#     """Создаёт рейтинг к новости"""
-#
-#     if request.method == "GET":
-#         post_obj = models.News.objects.get(id=int(pk))
-#         author_obj = request.user
-#         status = True if int(status) == 1 else False
-#         post_rating_objs = models.NewsRatings.objects.filter(post=post_obj, author=author_obj)
-#         if len(post_rating_objs) <= 0:
-#             models.NewsRatings.objects.create(post=post_obj, author=author_obj, status=status)
-#         else:
-#             post_rating_obj = post_rating_objs[0]
-#             if (status is True and post_rating_obj.status is True) or \
-#                     (status is False and post_rating_obj.status is False):
-#                 post_rating_obj.delete()
-#             else:
-#                 post_rating_obj.status = status
-#                 post_rating_obj.save()
-#         return redirect(reverse('news_detail', args=[pk]))
-#     else:
-#         raise Exception("Method not allowed!")
-#
-#
-#
-#
-#
+
+@login_required
+def post_search(request: HttpRequest) -> HttpResponse:
+    search = str(request.POST.get("search", ""))
+    posts = models.Post.objects.filter(is_active=True, title__icontains=search)
+    return render(request, "blog_app/post_search.html", {"posts": posts, "search": search})
+def post_comment_create(request: HttpRequest, pk: str) -> HttpResponse:
+    """Создание комментария."""
+
+    post = models.Post.objects.get(id=int(pk))
+    text = request.POST.get("text", "")
+    models.PostComments.objects.create(post=post, author=request.user, text=text)
+
+    return redirect(reverse("post_detail", args=(pk,)))
+
+def post_rating(request: HttpRequest, pk: str, is_like: str) -> HttpResponse:
+    post = models.Post.objects.get(id=int(pk))
+    is_like = True if str(is_like).lower().strip() == "лайк" else False  # тернарный оператор
+
+    ratings = models.PostRatings.objects.filter(post=post, author=request.user)
+    if len(ratings) < 1:
+        models.PostRatings.objects.create(post=post, author=request.user, status=is_like)
+    else:
+        rating = ratings[0]
+        if is_like == True and rating.status == True:
+            rating.delete()
+        elif is_like == False and rating.status == False:
+            rating.delete()
+        else:
+            rating.status = is_like
+            rating.save()
+
+    return redirect(reverse("post_detail", args=(pk,)))
+
+
+def user_password_recover_send(request):
+    if request.method == "GET":
+        context = {}
+        return render(request, "blog_app/user_password_recover_send.html", context)
+    elif request.method == "POST":
+        email = str(request.POST["email"]).strip()
+        users = User.objects.filter(username=email)
+        if len(users) < 1:
+            context = {"error": "Неправильное имя пользователя/почта", "email": email}
+            return render(request, "blog_app/user_password_recover_send.html", context)
+
+        """
+        ОТПРАВКА ПИСЬМА это платно*, поэтому нужно будет потом придумать как ограничить
+
+
+        1. SendPulse - 
+        + гибко, есть html шаблоны, не блочится другими почтами...
+        - платно, сложное api
+
+        2. Яндекс smtp
+        2.1 Создать яндекс аккаунт
+        2.2 Зайти в настройки (https://id.yandex.kz/security/app-passwords) - пароль от SMTP сохранить
+        2.3 Создать и настроить ENV-файл(переменные окружения)
+        2.4 В Django задать переменные (EMAIL_HOST...)
+        2.5 Отправить письмо через send_mail(...)
+        + бесплатно, не блочится другими почтами
+        - есть ограничения
+
+        """
+        try:
+            m_from = settings.EMAIL_HOST_USER
+            m_to = [email]
+            m_subject = "Восстановление доступа к аккаунту"
+            m_message = f"Ваш старый пароль: {users[0].password} {datetime.datetime.now()}"  # TODO
+            # TODO HTML
+            send_mail(m_subject, m_message, m_from, m_to)
+
+            context = {"success": "На указанную почту отправлен код восстанвления! Следуйте инструкциям в письме."}
+            return render(request, "blog_app/user_password_recover_send.html", context)
+        except Exception as error:
+            print(error)
+            return render(
+                request,
+                "blog_app/user_password_recover_send.html",
+                {"error": str(error)},
+            )

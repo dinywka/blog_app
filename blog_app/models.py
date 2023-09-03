@@ -57,10 +57,6 @@ class UserProfile(models.Model):
 @receiver(post_save, sender=User)
 def create_user_model(sender, instance, created, **kwargs):
     UserProfile.objects.get_or_create(user=instance)
-    # created - за булево значение, "создана ли модель"
-    # if created:
-    #     UserProfile.objects.get_or_create(user=instance)
-
 
 class Post(models.Model):
     """Наша модель поста"""
