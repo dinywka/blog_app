@@ -2,14 +2,15 @@
 {% load static %}
 {% block main %}
 
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"> <!-- grid styles added here -->
-{% for post in posts %}
+<div class="post-list grid grid-cols-1 sm:grid-cols-2 gap-8 place-items-center mx-auto max-w-7xl">
+{% for post in current_page %}
   <article class="flex bg-white transition hover:shadow-xl">
     <div class="rotate-180 p-2 [writing-mode:_vertical-lr]">
       <time datetime={{ post.date_time }} class="flex items-center justify-between gap-4 text-xs font-bold uppercase text-gray-900">
-        <span>2022</span>
+        <span>{{ post.date_time|date:"Y" }}</span>
         <span class="w-px flex-1 bg-gray-900/10"></span>
-        <span>Oct 10</span>
+        <span>{{ post.date_time|date:"M d" }}</span>
+
       </time>
     </div>
 
@@ -49,7 +50,7 @@
     </div>
   </article>
 {% endfor %}
-</div> <!-- Close the grid container -->
+</div>
 
 {% include "components/paginator.html" %}
 

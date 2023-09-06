@@ -7,13 +7,16 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from blog_app import models
 from django.core.cache import caches, CacheHandler
+from django.shortcuts import get_object_or_404
+
 
 RamCache = caches["default"]
 DatabaseCache = caches["extra"]
@@ -23,6 +26,9 @@ DatabaseCache = caches["extra"]
 # Create your views here.
 def home(request):
     return render(request, 'blog_app/home.html')
+
+def about(request):
+    return render(request, 'blog_app/about.html')
 
 def register(request):
     if request.method == "GET":
@@ -82,8 +88,11 @@ def post_list(request: HttpRequest) -> HttpResponse:
     """_view"""
 
     posts = models.Post.objects.all()
-
-    return render(request, "blog_app/list.html", {"posts": posts})
+    selected_page = request.GET.get(key="page", default=1)
+    limit_post_by_page = 3
+    paginator = Paginator(posts, limit_post_by_page)
+    current_page = paginator.get_page(selected_page)
+    return render(request, "blog_app/list.html", context={"current_page": current_page})
 
 
 def post_detail(request: HttpRequest, pk: str) -> HttpResponse:
@@ -92,9 +101,6 @@ def post_detail(request: HttpRequest, pk: str) -> HttpResponse:
     if post is None:
         post = models.Post.objects.get(id=pk)  # тяжёлое обращение к базе данных -- 100x - 1000x
         RamCache.set(f"post_detail_{pk}", post, timeout=30)
-
-    # Если мы поставили лайк - то закрашиваем кнопку
-    # post + user
 
     comments = models.PostComments.objects.filter(post=post)
     ratings = models.PostRatings.objects.filter(post=post)
@@ -107,8 +113,6 @@ def post_detail(request: HttpRequest, pk: str) -> HttpResponse:
     return render(request, "blog_app/post_detail.html",
                   context={"post": post, "comments": comments, "ratings": ratings, "is_detail_view": True})
 
-
-
 def post_create(request):
     """Создание нового мема."""
 
@@ -117,44 +121,55 @@ def post_create(request):
     elif request.method == "POST":
         title = request.POST.get("title", None)
         description = request.POST.get("description", None)
-        image = request.FILES["image"]
-        models.Post.objects.create(author=request.user, title=title, description=description, image=image)  # SQL
+        image = request.FILES.get("image", None)
+        models.Post.objects.create(author=request.user, title=title, description=description, image=image if image else None)
         return redirect(reverse("post_list"))
     else:
         raise ValueError("Invalid method")
-#
-#
-#
-# def post_update(request, pk: str):
-#     """Обновление существующего мема."""
-#
-#     if request.method == "GET":
-#         mem = models.Mem.objects.get(id=int(pk))  # SQL
-#         mem.title = mem.title[::-1]
-#         # mem.is_moderate = False
-#         mem.save()
-#         return redirect(reverse("list"))
-#     else:
-#         raise ValueError("Invalid method")
-#
-#
-# def post_delete(request, pk: str):
-#     """Удаление мема."""
-#
-#     if request.method == "GET":
-#         mem = models.Mem.objects.get(id=int(pk))  # SQL
-#         mem.delete()
-#         return redirect(reverse("list"))
-#     else:
-#         raise ValueError("Invalid method")
-#
-#
+
+
+def post_delete(request, pk):
+    if request.method != "GET":
+        raise ValueError("Invalid method")
+
+    post = models.Post.objects.get(id=int(pk))
+
+    if post.author != request.user:
+        raise PermissionDenied("You are not the author of this post.")
+
+    post.delete()
+    return redirect(reverse("post_list"))
+
+
+def post_update(request, pk: str):
+    """Обновление существующего мема."""
+
+    post = get_object_or_404(models.Post, id=int(pk))
+    if post.author != request.user:
+        raise PermissionDenied("You are not the author of this post.")
+    else:
+        if request.method == "GET":
+            return render(request, "blog_app/post_update.html", {'post': post})
+
+        elif request.method == "POST":
+            post.title = request.POST.get("title", post.title)  # Set title if present, else retain the old one
+            post.description = request.POST.get("description", post.description)  # Similar for description
+
+            if "image" in request.FILES:
+                post.image = request.FILES["image"]
+
+            post.save()
+            return redirect(reverse("post_list"))
+
+        else:
+            raise ValueError("Invalid method")
 
 @login_required
 def post_search(request: HttpRequest) -> HttpResponse:
     search = str(request.POST.get("search", ""))
     posts = models.Post.objects.filter(is_active=True, title__icontains=search)
     return render(request, "blog_app/post_search.html", {"posts": posts, "search": search})
+
 def post_comment_create(request: HttpRequest, pk: str) -> HttpResponse:
     """Создание комментария."""
 
@@ -195,24 +210,6 @@ def user_password_recover_send(request):
             context = {"error": "Неправильное имя пользователя/почта", "email": email}
             return render(request, "blog_app/user_password_recover_send.html", context)
 
-        """
-        ОТПРАВКА ПИСЬМА это платно*, поэтому нужно будет потом придумать как ограничить
-
-
-        1. SendPulse - 
-        + гибко, есть html шаблоны, не блочится другими почтами...
-        - платно, сложное api
-
-        2. Яндекс smtp
-        2.1 Создать яндекс аккаунт
-        2.2 Зайти в настройки (https://id.yandex.kz/security/app-passwords) - пароль от SMTP сохранить
-        2.3 Создать и настроить ENV-файл(переменные окружения)
-        2.4 В Django задать переменные (EMAIL_HOST...)
-        2.5 Отправить письмо через send_mail(...)
-        + бесплатно, не блочится другими почтами
-        - есть ограничения
-
-        """
         try:
             m_from = settings.EMAIL_HOST_USER
             m_to = [email]

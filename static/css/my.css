@@ -1,0 +1,38 @@
+.container {
+    display: flex;
+    justify-content: center; /* Horizontally center children */
+    align-items: center; /* Vertically center children */
+    width: 100%;
+    margin: 0 auto;
+}
+
+.search-form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.search-form .form-control {
+    border: 1px solid #e0e0e0;
+    width: 550px;
+}
+
+.search-form .btn-success {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+    background-color: mediumaquamarine;
+    width: 120px;
+    height: 45px;
+    border-radius: 5px;
+}
+
+.post-list {
+    margin: 0 auto;
+}
+
+
+
