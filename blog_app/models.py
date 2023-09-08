@@ -5,6 +5,7 @@ from django.db import models
 from django.db.models.signals import post_save, pre_save, pre_delete
 from django.dispatch import receiver
 from django.utils.timezone import now
+import random
 
 """
 Расширение модели пользователя(добавление чего-то, аватарка)
@@ -40,7 +41,7 @@ class UserProfile(models.Model):
         on_delete=models.CASCADE,
         related_name="profile",  # user.profile
     )
-    avatar = models.ImageField(verbose_name="Аватарка", upload_to="users/avatars", default=None, null=True, blank=True)
+    avatar = models.ImageField(verbose_name="Аватарка", upload_to="users/avatars", default="https://vk-wiki.ru/wp-content/uploads/2019/04/male-user-profile-picture.png", null=True, blank=True)
 
     class Meta:
         """Вспомогательный класс"""
@@ -115,3 +116,29 @@ class PostRatings(models.Model):
         else:
             like = "ДИЗЛАЙК"
         return f"{self.post.title} {self.author.username} {like}"
+
+
+class UserAuthToken(models.Model):
+    user = models.ForeignKey(verbose_name="Пользователь", to=User, on_delete=models.CASCADE)
+    token = models.CharField(verbose_name="Токен", max_length=300)
+
+    class Meta:
+        app_label = "blog_app"
+        ordering = ("-user", "token")
+        verbose_name = "Токен доступа"
+        verbose_name_plural = "Токены доступа"
+
+    def __str__(self):
+        return f"{self.user.username} {self.token}"
+
+    @staticmethod
+    def token_generator() -> str:
+        def generate_track(length: int, characters: str) -> str:
+            return "".join(random.choice(characters) for _ in range(length))
+
+        f1 = "M"
+        f2 = generate_track(3, "1234567890")
+        f3 = generate_track(3, "1234567890")
+        f4 = generate_track(2, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+        return f"{f1}{f2}{f3}{f4}"

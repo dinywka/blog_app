@@ -214,8 +214,11 @@ def user_password_recover_send(request):
             m_from = settings.EMAIL_HOST_USER
             m_to = [email]
             m_subject = "Восстановление доступа к аккаунту"
-            m_message = f"Ваш старый пароль: {users[0].password} {datetime.datetime.now()}"  # TODO
-            # TODO HTML
+            token = models.UserAuthToken.objects.create(user=users[0], token=models.UserAuthToken.token_generator())
+            # Yandex блокирует как спам, {} чтобы не блокировал. Письмо падает в Спам
+            token_key = {token.token}
+            m_message = f"Перейдите по ссылке: 'http://127.0.0.1:8000/user/password_recover/input/{token_key}/'"
+            print(m_message)
             send_mail(m_subject, m_message, m_from, m_to)
 
             context = {"success": "На указанную почту отправлен код восстанвления! Следуйте инструкциям в письме."}
@@ -227,3 +230,16 @@ def user_password_recover_send(request):
                 "blog_app/user_password_recover_send.html",
                 {"error": str(error)},
             )
+
+def user_password_recover_input(request: HttpRequest, token: str) -> HttpResponse:
+    try:
+        token = models.UserAuthToken.objects.get(token=str(token))
+        login(request, token.user)
+        token.delete()
+        return redirect(reverse("home"))
+    except Exception as error:
+        print(error)
+        return redirect(reverse("login"))
+
+def profile(request):
+    return render(request, "blog_app/profile.html")
