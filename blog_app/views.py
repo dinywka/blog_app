@@ -56,7 +56,7 @@ def register(request):
                 "blog_app/register.html",
                 {"error": str(error)},
             )
-        return render(request, "blog_app/list.html")
+        return render(request, "blog_app/home.html")
     else:
         raise ValueError("Invalid method")
 
