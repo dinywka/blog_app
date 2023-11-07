@@ -34,7 +34,7 @@ SECRET_KEY = 'django-insecure-coc79ha1i1m_4qwoag1&x1yq1y6mk1kzsjyjm0t!t*_*l-jftl
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['ditim.pythonanywhere.com']
 
 
 # Application definition
@@ -158,9 +158,9 @@ USE_TZ = True
 # MEDIA_URL = "media/"
 # MEDIA_ROOT = "static/media"
 
-MEDIA_ROOT = '/home/dinakul13/blog_app/media'
+MEDIA_ROOT = '/home/ditim/blog_app/media'
 MEDIA_URL = '/media/'
-STATIC_ROOT = '/home/dinakul13/blog_app/static'
+STATIC_ROOT = '/home/ditim/blog_app/static'
 STATIC_URL = '/static/'
 
 # Default primary key field type
