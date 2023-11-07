@@ -241,5 +241,5 @@ def post_rating(request: HttpRequest, pk: str, is_like: str) -> HttpResponse:
 #         print(error)
 #         return redirect(reverse("login"))
 #
-# def profile(request):
-#     return render(request, "blog_app/profile.html")
+def profile(request):
+    return render(request, "blog_app/profile.html")
