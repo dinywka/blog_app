@@ -198,48 +198,48 @@ def post_rating(request: HttpRequest, pk: str, is_like: str) -> HttpResponse:
 
     return redirect(reverse("post_detail", args=(pk,)))
 
-
-def user_password_recover_send(request):
-    if request.method == "GET":
-        context = {}
-        return render(request, "blog_app/user_password_recover_send.html", context)
-    elif request.method == "POST":
-        email = str(request.POST["email"]).strip()
-        users = User.objects.filter(username=email)
-        if len(users) < 1:
-            context = {"error": "Неправильное имя пользователя/почта", "email": email}
-            return render(request, "blog_app/user_password_recover_send.html", context)
-
-        try:
-            m_from = settings.EMAIL_HOST_USER
-            m_to = [email]
-            m_subject = "Восстановление доступа к аккаунту"
-            token = models.UserAuthToken.objects.create(user=users[0], token=models.UserAuthToken.token_generator())
-            # Yandex блокирует как спам, {} чтобы не блокировал. Письмо падает в Спам
-            token_key = {token.token}
-            m_message = f"Перейдите по ссылке: 'http://127.0.0.1:8000/user/password_recover/input/{token_key}/'"
-            print(m_message)
-            send_mail(m_subject, m_message, m_from, m_to)
-
-            context = {"success": "На указанную почту отправлен код восстанвления! Следуйте инструкциям в письме."}
-            return render(request, "blog_app/user_password_recover_send.html", context)
-        except Exception as error:
-            print(error)
-            return render(
-                request,
-                "blog_app/user_password_recover_send.html",
-                {"error": str(error)},
-            )
-
-def user_password_recover_input(request: HttpRequest, token: str) -> HttpResponse:
-    try:
-        token = models.UserAuthToken.objects.get(token=str(token))
-        login(request, token.user)
-        token.delete()
-        return redirect(reverse("home"))
-    except Exception as error:
-        print(error)
-        return redirect(reverse("login"))
-
-def profile(request):
-    return render(request, "blog_app/profile.html")
+#
+# def user_password_recover_send(request):
+#     if request.method == "GET":
+#         context = {}
+#         return render(request, "blog_app/user_password_recover_send.html", context)
+#     elif request.method == "POST":
+#         email = str(request.POST["email"]).strip()
+#         users = User.objects.filter(username=email)
+#         if len(users) < 1:
+#             context = {"error": "Неправильное имя пользователя/почта", "email": email}
+#             return render(request, "blog_app/user_password_recover_send.html", context)
+#
+#         try:
+#             m_from = settings.EMAIL_HOST_USER
+#             m_to = [email]
+#             m_subject = "Восстановление доступа к аккаунту"
+#             token = models.UserAuthToken.objects.create(user=users[0], token=models.UserAuthToken.token_generator())
+#             # Yandex блокирует как спам, {} чтобы не блокировал. Письмо падает в Спам
+#             token_key = {token.token}
+#             m_message = f"Перейдите по ссылке: 'http://127.0.0.1:8000/user/password_recover/input/{token_key}/'"
+#             print(m_message)
+#             send_mail(m_subject, m_message, m_from, m_to)
+#
+#             context = {"success": "На указанную почту отправлен код восстанвления! Следуйте инструкциям в письме."}
+#             return render(request, "blog_app/user_password_recover_send.html", context)
+#         except Exception as error:
+#             print(error)
+#             return render(
+#                 request,
+#                 "blog_app/user_password_recover_send.html",
+#                 {"error": str(error)},
+#             )
+#
+# def user_password_recover_input(request: HttpRequest, token: str) -> HttpResponse:
+#     try:
+#         token = models.UserAuthToken.objects.get(token=str(token))
+#         login(request, token.user)
+#         token.delete()
+#         return redirect(reverse("home"))
+#     except Exception as error:
+#         print(error)
+#         return redirect(reverse("login"))
+#
+# def profile(request):
+#     return render(request, "blog_app/profile.html")

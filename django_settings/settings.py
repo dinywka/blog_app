@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-import environ
+# import environ
 import os
 
 
@@ -19,12 +19,12 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-env = environ.Env(
-    EMAIL_HOST=(str, None),
-    EMAIL_HOST_USER=(str, None),
-    EMAIL_HOST_PASSWORD=(str, None),
-)
-environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+# env = environ.Env(
+#     EMAIL_HOST=(str, None),
+#     EMAIL_HOST_USER=(str, None),
+#     EMAIL_HOST_PASSWORD=(str, None),
+# )
+# environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
@@ -34,7 +34,7 @@ SECRET_KEY = 'django-insecure-coc79ha1i1m_4qwoag1&x1yq1y6mk1kzsjyjm0t!t*_*l-jftl
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ['dinakul13.pythonanywhere.com']
 
 
 # Application definition
@@ -140,33 +140,38 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = "/static/"
-if DEBUG:
-    # режиме разработки: django "отдаёт" статику сам
-    STATICFILES_DIRS = [
-        Path(BASE_DIR / "static"),
-        Path(BASE_DIR / "static_external"),
-    ]
-else:
-    # режиме production(debug==false): nginx "отдаёт" статику
-    # collectstatic
-    STATIC_ROOT = Path(BASE_DIR / "static")
-    STATICFILES_DIRS = [
-        Path(BASE_DIR / "static_external"),
-    ]
+# STATIC_URL = "/static/"
+# if DEBUG:
+#     # режиме разработки: django "отдаёт" статику сам
+#     STATICFILES_DIRS = [
+#         Path(BASE_DIR / "static"),
+#         Path(BASE_DIR / "static_external"),
+#     ]
+# else:
+#     # режиме production(debug==false): nginx "отдаёт" статику
+#     # collectstatic
+#     STATIC_ROOT = Path(BASE_DIR / "static")
+#     STATICFILES_DIRS = [
+#         Path(BASE_DIR / "static_external"),
+#     ]
+#
+# MEDIA_URL = "media/"
+# MEDIA_ROOT = "static/media"
 
-MEDIA_URL = "media/"
-MEDIA_ROOT = "static/media"
+MEDIA_ROOT = '/home/dinakul13/blog_app/media'
+MEDIA_URL = '/media/'
+STATIC_ROOT = '/home/dinakul13/blog_app/static'
+STATIC_URL = '/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = env("EMAIL_HOST")
+# EMAIL_HOST = env("EMAIL_HOST")
 EMAIL_PORT = 465  # (465 = SSL | 587 = TLS)
 EMAIL_USE_TLS = False
 EMAIL_USE_SSL = True
-EMAIL_HOST_USER = env("EMAIL_HOST_USER")  # Ваш адрес Yandex
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")  # Пароль от вашего Yandex аккаунта
+# EMAIL_HOST_USER = env("EMAIL_HOST_USER")  # Ваш адрес Yandex
+# EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")  # Пароль от вашего Yandex аккаунта
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

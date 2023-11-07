@@ -17,7 +17,7 @@ urlpatterns = [
     path("post/update/<str:pk>/", views.post_update, name="post_update"),
     path("post/comment/create/<str:pk>/", views.post_comment_create, name="post_comment_create"),
     path("post/rating/<str:pk>/<str:is_like>/", views.post_rating, name="post_rating"),
-    path("password/recover/", views.user_password_recover_send, name="user_password_recover_send"),
-    path("user/password_recover/login/", views.user_password_recover_send, name="user_password_recover_login"),
-    path("user/password_recover/input/<str:token>/", views.user_password_recover_input, name="user_password_recover_input"),
+    # path("password/recover/", views.user_password_recover_send, name="user_password_recover_send"),
+    # path("user/password_recover/login/", views.user_password_recover_send, name="user_password_recover_login"),
+    # path("user/password_recover/input/<str:token>/", views.user_password_recover_input, name="user_password_recover_input"),
 ]
